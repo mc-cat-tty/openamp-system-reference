@@ -16,7 +16,7 @@ collector_list (_deps PROJECT_LIB_DEPS)
 set (OPENAMP_LIB open_amp)
 
 if (WITH_VIRTIO_DRIVER)
-	 message(FATAL_ERROR "WITH_VIRTIO_DRIVER ignored.")
+	 message(WARNING "WITH_VIRTIO_DRIVER ignored.")
 endif (WITH_VIRTIO_DRIVER)
 
 set(_app "bench")
