@@ -316,5 +316,13 @@ _SDA2_BASE_ = __sdata2_start + ((__sbss2_end - __sdata2_start) / 2 );
    __undef_stack = .;
 } > psu_r5_tcm_ram_0_S_AXI_BASEADDR
 
+.tcm_bench : {
+  *(.tcm_bench)
+} > psu_r5_tcm_ram_1_S_AXI_BASEADDR
+
+.tcm_text : {
+  *(.tcm_text)
+} > psu_r5_tcm_ram_0_S_AXI_BASEADDR
+
 _end = .;
 }
