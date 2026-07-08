@@ -25,6 +25,7 @@ typedef enum {
 
 static struct rpmsg_endpoint lept;
 static request_t req = NO_REQ;
+static uint32_t host_addr = RPMSG_ADDR_ANY;	/* address of the host endpoint to reply to */
 
 
 static TCM_TEXT void r5_benchmark(uint32_t *samples) {
@@ -55,7 +56,6 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
 			     uint32_t src, void *priv)
 {
 	(void)priv;
-	(void)src;
 
   if (len >= sizeof(uint32_t)) {
     uint32_t cmd = (*(uint32_t*)data);
@@ -69,6 +69,7 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
     /* On reception of a start bench signal we start the benchmark and report the results */
     if (cmd == STARTBENCH_MSG) {
       LPRINTF("start benchmark message is received.\r\n");
+      host_addr = src;          /* remember who asked so we can reply there */
       req = STARTBENCH_REQ;
       return RPMSG_SUCCESS;
     }
@@ -131,7 +132,7 @@ int bench_app(struct rpmsg_device *rdev, void *priv)
       const size_t batch = 100;
       for (int i=0; i<SAMPLES_NUMBER; i+=batch) {
         size_t n = (SAMPLES_NUMBER - i < batch) ? (SAMPLES_NUMBER - i) : batch;
-        if (rpmsg_send(&lept, (void*)&(samples[i]), n*sizeof(sample_ele_type)) < 0)
+        if (rpmsg_sendto(&lept, (void*)&(samples[i]), n*sizeof(sample_ele_type), host_addr) < 0)
           LPERROR("rpmsg_send failed\r\n");
       }
       req = NO_REQ;
