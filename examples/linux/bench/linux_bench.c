@@ -44,7 +44,7 @@
 
 #define WARMUP_ITERS 1000
 #define DEFAULT_CPU  3
-#define RECV_TIMEOUT_SEC 5
+#define RECV_TIMEOUT_SEC 30
 
 /* Compiler barrier: prevents the compiler from hoisting/CSE-ing bench_fun() out of
  * the timing loop. On the R5 bench_fun is noinline (can't be CSE'd); on the A53 it
