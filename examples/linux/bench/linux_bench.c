@@ -38,6 +38,10 @@
 #define PR_DBG(fmt, args ...) printf("%s():%u "fmt, __func__, __LINE__, ##args)
 #define RPMSG_BUS_SYS "/sys/bus/rpmsg"
 
+#ifndef RPMSG_ADDR_ANY
+#define RPMSG_ADDR_ANY 0xFFFFFFFF
+#endif
+
 #define WARMUP_ITERS 1000
 #define DEFAULT_CPU  3
 #define RECV_TIMEOUT_SEC 5
@@ -246,6 +250,9 @@ int main(int argc, char *argv[])
 			return charfd;
 	}
 
+	/* Let the kernel assign a dynamic source address (>= 1024). src=0 makes the
+	 * endpoint unreachable for the R5's reply ("msg received with no recipient"). */
+	eptinfo.src = RPMSG_ADDR_ANY;
 	PR_DBG("create_ept: %s[src=%#x,dst=%#x]\n",
 	       eptinfo.name, eptinfo.src, eptinfo.dst);
 	ret = app_rpmsg_create_ept(charfd, &eptinfo);
