@@ -27,12 +27,12 @@ static struct rpmsg_endpoint lept;
 static request_t req = NO_REQ;
 
 
-static TCM_TEXT void benchmark(uint32_t *samples) {
+static TCM_TEXT void r5_benchmark(uint32_t *samples) {
   volatile uint32_t acc;
   uint32_t start_t, exec_t;
 
   for (int i=0; i<VECTOR_LENGTH; i++)
-    bench_vector[i] = rand();
+    bench_vector[i] = (vector_ele_type) rand();
   
   for (int i=0; i<SAMPLES_NUMBER; i++)
     samples[i] = -1;
@@ -126,7 +126,7 @@ int bench_app(struct rpmsg_device *rdev, void *priv)
 			break;
 		}
     else if (req == STARTBENCH_REQ) {
-      benchmark(samples);
+      r5_benchmark(samples);
       
       const size_t batch = 100;
       for (int i=0; i<SAMPLES_NUMBER; i+=batch) {
