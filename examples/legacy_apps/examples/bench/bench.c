@@ -128,7 +128,10 @@ int bench_app(struct rpmsg_device *rdev, void *priv)
 		}
     else if (req == STARTBENCH_REQ) {
       r5_benchmark(samples);
-      
+
+      LPRINTF("streaming %d samples to host 0x%x (self 0x%x)\r\n",
+              SAMPLES_NUMBER, host_addr, lept.addr);
+
       const size_t batch = 100;
       for (int i=0; i<SAMPLES_NUMBER; i+=batch) {
         size_t n = (SAMPLES_NUMBER - i < batch) ? (SAMPLES_NUMBER - i) : batch;
