@@ -27,7 +27,7 @@ static struct rpmsg_endpoint lept;
 static request_t req = NO_REQ;
 
 
-static void benchmark(uint32_t *samples) {
+static TCM_TEXT void benchmark(uint32_t *samples) {
   volatile uint32_t acc;
   uint32_t start_t, exec_t;
 
