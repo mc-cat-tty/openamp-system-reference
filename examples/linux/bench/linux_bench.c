@@ -13,9 +13,13 @@
  *   4. Write both datasets to CSV for offline analysis
  *
  *
- * For a clean A53 measurement, run pinned + real-time, e.g.:
- *   sudo chrt -f 99 taskset -c 3 ./linux_bench -p 3
- * and, for the "disturbed" configuration, load the sibling cores with stress-ng.
+ * Clean measurement: sudo chrt -f 99 taskset -c 3 ./linux_bench -p 3
+ * 
+ * Disturbed measurement, stressing sibling cores:
+ * sudo taskset -c 0,1,2 stress-ng --cpu 3 --vm 3 --vm-bytes 256M --cache 3 --cache-enable-all -t 60s & sleep 5; sudo chrt -f 99 taskset -c 3 ./linux_bench -p 3 -r stressed_r5_samples.csv -o stressed_a53_samples.csv
+ * 
+ * Disturbed measurement, stressing all cores:
+ * sudo taskset -c 0,1,2,3 stress-ng --cpu 4 --vm 3 --vm-bytes 256M --cache 3 --cache-enable-all -t 60s & sleep 5; sudo ./linux_bench -p 3 -r max_stressed_r5_samples.csv -o max_stressed_a53_samples.csv
  */
 
 #define _GNU_SOURCE
