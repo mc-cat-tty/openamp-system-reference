@@ -10,9 +10,11 @@ R5 clock frequency can be found in BSP's xparameters.h XPAR_CPU_CORE_CLOCK_FREQ_
 """
 import argparse
 import numpy as np
+import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def load(path, r5_hz):
@@ -68,19 +70,25 @@ def main():
               f"{s['cv']*100:>7.2f}{s['spread']:>9.1f}")
     print("\ntimes in ns; CV = std/mean (jitter metric); max/min = worst-case spread")
 
-    # histogram, normalized to each series' median -> compares jitter shape
+    # histogram, raw execution time -> compares actual timing, not just shape
+    # median (dashed) per series as decoration
     plt.figure(figsize=(9, 5))
     for lbl, x, _ in data:
-        plt.hist(x / np.median(x), bins=200, histtype="step",
-                 density=True, log=True, label=lbl)
-    plt.xlabel("execution time / median")
+        x_us = x / 1e3
+        line = plt.hist(x_us, bins=200, histtype="step",
+                         density=True, log=True, label=lbl)
+        color = line[2][0].get_edgecolor()
+        plt.axvline(np.median(x_us), color=color, linestyle="--",
+                    linewidth=1, alpha=0.8)
+    plt.xlabel("execution time (us)")
     plt.ylabel("density (log)")
-    plt.title("Execution-time distribution (normalized to median)")
+    plt.title("Execution-time distribution (dashed = median)")
     plt.legend()
     plt.tight_layout()
     plt.savefig(f"{a.out}_hist.png", dpi=130)
 
     # CCDF: P(time > x), log-y -> the tail is the story
+    # combined: all domains on one shared axis
     plt.figure(figsize=(9, 5))
     for lbl, x, _ in data:
         xs = np.sort(x)
@@ -94,7 +102,58 @@ def main():
     plt.tight_layout()
     plt.savefig(f"{a.out}_ccdf.png", dpi=130)
 
-    print(f"\nsaved {a.out}_hist.png and {a.out}_ccdf.png")
+    # separate: each domain gets its own subplot/axis: R5's jitter is orders
+    # of magnitude tighter than A53's, so a shared scale crushes one of them.
+    # laid out on a square-ish grid rather than a single row, so it doesn't
+    # get absurdly wide as more experiments are added
+    n = len(data)
+    ncols = int(np.ceil(np.sqrt(n)))
+    nrows = int(np.ceil(n / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(6 * ncols, 5 * nrows),
+                             squeeze=False)
+    axes_flat = axes.flatten()
+    for ax, (lbl, x, _) in zip(axes_flat, data):
+        xs = np.sort(x)
+        ccdf = 1.0 - np.arange(len(xs)) / len(xs)
+        ax.semilogy(xs / np.median(x), ccdf, label=lbl)
+        ax.set_xlabel("execution time / median")
+        ax.set_ylabel("P(time > x)")
+        ax.set_title(lbl)
+        ax.grid(True, which="both", alpha=0.3)
+        # disable offset notation: for narrow ranges (e.g. R5) matplotlib
+        # relabels ticks relative to a "+1" corner offset, which reads as
+        # if the axis starts at 0.0 instead of ~1.0
+        ax.ticklabel_format(useOffset=False, style="plain", axis="x")
+        ax.margins(x=0)
+    for ax in axes_flat[n:]:
+        ax.set_visible(False)
+    fig.suptitle("Tail distribution (CCDF, separate axes)")
+    plt.tight_layout()
+    plt.savefig(f"{a.out}_ccdf_separate.png", dpi=130)
+
+    # long-form frame + shared ordering for the seaborn plot below
+    df = pd.concat(
+        [pd.DataFrame({"time_us": x / 1e3, "domain": lbl}) for lbl, x, _ in data],
+        ignore_index=True)
+    order = [lbl for lbl, _, _ in data]
+
+    # horizontal boxplot with raw observations overlaid, log-x execution time
+    with sns.axes_style("ticks"):
+        fig, ax = plt.subplots(figsize=(10, 1.2 * len(order) + 1))
+        ax.set_xscale("log")
+        sns.boxplot(df, x="time_us", y="domain", order=order, hue="domain",
+                   whis=[0, 100], width=0.6, palette="vlag", legend=False, ax=ax)
+        sns.stripplot(df, x="time_us", y="domain", order=order,
+                     size=4, color=".3", ax=ax)
+        ax.xaxis.grid(True)
+        ax.set(xlabel="execution time (us, log scale)", ylabel="",
+              title="Execution-time spread by experiment")
+        sns.despine(trim=True, left=True)
+        plt.tight_layout()
+        fig.savefig(f"{a.out}_box.png", dpi=150)
+
+    print(f"\nsaved {a.out}_hist.png, {a.out}_ccdf.png, {a.out}_ccdf_separate.png "
+          f"and {a.out}_box.png")
 
 
 if __name__ == "__main__":
